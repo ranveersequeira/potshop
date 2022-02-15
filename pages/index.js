@@ -10,7 +10,39 @@ import Answer from '../components/Answer'
 import AnswerForm from '../components/AnswerForm'
 
 export default function Home() {
+  const [accounts, setAccounts] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [answers, setAnswers] = useState([]);
 
+  const connect = async () => {
+    const acc = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    setAccounts(acc);
+    console.log("connect called")
+  }
+
+  useEffect(() => {
+    if (accounts.length > 0) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, [accounts])
+
+  useEffect(async () => {
+    const a = await window.ethereum.request({ method: 'eth_accounts' });
+    setAccounts(a);
+
+    window.ethereum.on("accountsChanged", (a) => setAccounts(a));
+
+    fetch("/api/answers")
+      .then(response => response.json())
+      .then(data => {
+        setAnswers(data.answers)
+        setIsLoading(false);
+      })
+
+  }, [])
 
   return (
     <main>
@@ -20,8 +52,7 @@ export default function Home() {
         <form>
           <input type="text" placeholder="Search" />
         </form>
-
-        <button>Connect</button>
+        <Account accounts={accounts} connect={connect} isLoggedIn={isLoggedIn} />
       </header>
 
       <section className="question">
@@ -41,7 +72,7 @@ export default function Home() {
           
           {/* EthName */}
           <div className="eth-name">
-            <img src="https://ipfs.io/ipfs/QmbctVN8tPaDLiLysVDwThf7JTJhMejbSypZ4a3v5H2G3a" alt="Avatar of riklomas.eth" />
+            <img src="https://geekflare.com/wp-content/uploads/2020/10/image-hosting.jpg" alt="Avatar of ranveer.eth" />
             <div className="name">
               <span className="primary">ranveer.eth</span>
               <span className="secondary">0xb25bf3...aaf4</span>
@@ -53,7 +84,17 @@ export default function Home() {
       </section>
 
       <section className="answers">
-        <div className="loading">Loading answers...</div>
+        {isLoading ?
+          <div className="loading">Loading answers...</div> :
+          <>
+            {answers.map((answer, idx) => {
+              return <Answer answer={answer} number={idx + 1} accounts={accounts} isLoggedIn={isLoggedIn} />
+
+            })}
+          </>
+
+        }
+        <AnswerForm accounts={accounts} setAnswers={setAnswers} isLoggedIn={isLoggedIn} />
       </section>
 
       <Head>
